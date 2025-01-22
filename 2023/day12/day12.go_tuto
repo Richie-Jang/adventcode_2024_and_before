@@ -1,0 +1,84 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/samber/lo"
+)
+
+func count(s string, ns []int, remain int) int {
+	if len(s) == 0 {
+		if len(ns) == 0 {
+			return 1
+		}
+		if len(ns) == 1 && ns[0] == remain {
+			return 1
+		}
+		return 0
+	}
+
+	var (
+		dotOper  func() int
+		hashOper func() int
+	)
+
+	dotOper = func() int {
+		if remain == 0 {
+			return count(s[1:], ns, 0)
+		}
+		if ns[0] == remain {
+			return count(s[1:], ns[1:], 0)
+		}
+		return 0
+	}
+
+	hashOper = func() int {
+		if len(ns) == 0 {
+			return 0
+		}
+		if remain == ns[0] {
+			return 0
+		}
+		return count(s[1:], ns, remain+1)
+	}
+
+	switch s[0] {
+	case '.':
+		return dotOper()
+	case '#':
+		return hashOper()
+	default:
+		return dotOper() + hashOper()
+	}
+
+}
+
+func parse(s string) (string, []int) {
+	ss := strings.Split(s, " ")
+	ns := lo.Map(strings.Split(ss[1], ","), func(t string, _ int) int {
+		return lo.Must1(strconv.Atoi(t))
+	})
+	return ss[0], ns
+}
+
+func main() {
+	f := lo.Must1(os.Open("input.txt"))
+	defer func() {
+		er := f.Close()
+		if er != nil {
+			panic(er)
+		}
+	}()
+	br := bufio.NewScanner(f)
+	sum := 0
+	for br.Scan() {
+		s := br.Text()
+		cfg, ns := parse(s)
+		sum += count(cfg, ns, 0)
+	}
+	fmt.Println(sum)
+}
